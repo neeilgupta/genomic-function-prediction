@@ -1,0 +1,32 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+
+# Data
+data/raw/*
+!data/raw/.gitkeep
+*.fasta
+*.fna
+*.csv
+
+# Artifacts
+artifacts/*
+!artifacts/.gitkeep
+*.pkl
+*.npy
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db

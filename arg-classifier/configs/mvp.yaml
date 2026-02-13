@@ -1,0 +1,17 @@
+seed: 42
+data:
+  raw_dir: data/raw
+  processed_dir: data/processed
+  min_length: 100
+  max_length: 5000
+split:
+  train: 0.7
+  val: 0.15
+  test: 0.15
+features:
+  kmer_size: 5
+  use_tfidf: true
+model:
+  type: logistic_regression
+  max_iter: 1000
+  C: 1.0
