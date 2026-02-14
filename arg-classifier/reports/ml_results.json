@@ -1,0 +1,76 @@
+{
+  "model": "logistic_regression_tfidf",
+  "accuracy": 1.0,
+  "macro_f1": 1.0,
+  "classification_report": {
+    "KPC": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1-score": 1.0,
+      "support": 35.0
+    },
+    "NDM": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1-score": 1.0,
+      "support": 10.0
+    },
+    "VIM": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1-score": 1.0,
+      "support": 14.0
+    },
+    "IMP": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1-score": 1.0,
+      "support": 15.0
+    },
+    "accuracy": 1.0,
+    "macro avg": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1-score": 1.0,
+      "support": 74.0
+    },
+    "weighted avg": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1-score": 1.0,
+      "support": 74.0
+    }
+  },
+  "confusion_matrix": [
+    [
+      35,
+      0,
+      0,
+      0
+    ],
+    [
+      0,
+      10,
+      0,
+      0
+    ],
+    [
+      0,
+      0,
+      14,
+      0
+    ],
+    [
+      0,
+      0,
+      0,
+      15
+    ]
+  ],
+  "labels": [
+    "KPC",
+    "NDM",
+    "VIM",
+    "IMP"
+  ]
+}
