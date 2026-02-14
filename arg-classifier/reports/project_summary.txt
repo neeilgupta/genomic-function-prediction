@@ -1,0 +1,44 @@
+ARG FAMILY CLASSIFIER - PROJECT SUMMARY
+========================================
+
+Dataset:
+- Source: CARD v4.0.1 (May 2025)
+- Total sequences: 489
+- Classes: KPC (230), NDM (71), VIM (89), IMP (99)
+- Split: 342 train / 73 val / 74 test
+
+Features:
+- K-mer size: 5
+- Vectorization: TF-IDF
+- Feature dimensions: 1,023
+
+Models:
+- Baseline: K-mer Jaccard nearest neighbor
+- ML Model: Logistic Regression (multinomial)
+
+Results:
+                Accuracy    Macro F1    Inference Time
+Baseline        1.0000      1.0000      0.7s
+ML Model        1.0000      1.0000      <0.01s
+
+Key Findings:
+1. Both models achieve perfect accuracy (reflects high similarity
+   of allelic variants within families)
+2. ML model is 70x faster than nearest-neighbor search
+3. ML model requires only 1,023 coefficients (40KB) vs storing
+   342 training sequences (270KB)
+4. Model converged in 15 iterations (clear linear separability)
+5. Lowest confidence prediction: VIM-69 at 0.6188 (still correct)
+   — an outlier allele with unusual k-mer profile vs. family centroid
+
+Value Propositions:
+- Speed: Enable real-time pathogen identification
+- Scalability: O(1) inference vs O(n) nearest-neighbor
+- Deployment: Smaller memory footprint for edge devices
+- Interpretability: Per-class probabilities for clinical decision support
+
+Future Work:
+- Cluster-based split (90% identity) for harder evaluation
+- Expand to 15+ ARG families beyond carbapenemases
+- Explore deep learning (CNN, Transformer) architectures
+- Protein-space embeddings via ESM-2

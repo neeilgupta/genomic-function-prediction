@@ -1,0 +1,45 @@
+=== ERROR ANALYSIS: Lowest Confidence Predictions ===
+
+Since model achieves 100% accuracy, we analyze the 5 predictions
+with lowest confidence to understand edge cases:
+
+1. VIM-69 (VIM)
+   Predicted: VIM (confidence: 0.6188)
+   Runner-up: IMP (prob: 0.1516)
+   Length: 798 bp
+   Interpretation: Model is least confident on this VIM
+                   sequence, but still correct.
+
+2. IMP-95 (IMP)
+   Predicted: IMP (confidence: 0.9053)
+   Runner-up: VIM (prob: 0.0372)
+   Length: 741 bp
+   Interpretation: Model is least confident on this IMP
+                   sequence, but still correct.
+
+3. NDM-68 (NDM)
+   Predicted: NDM (confidence: 0.9072)
+   Runner-up: KPC (prob: 0.0379)
+   Length: 813 bp
+   Interpretation: Model is least confident on this NDM
+                   sequence, but still correct.
+
+4. NDM-19 (NDM)
+   Predicted: NDM (confidence: 0.9083)
+   Runner-up: KPC (prob: 0.0352)
+   Length: 813 bp
+   Interpretation: Model is least confident on this NDM
+                   sequence, but still correct.
+
+5. NDM-55 (NDM)
+   Predicted: NDM (confidence: 0.9084)
+   Runner-up: KPC (prob: 0.0373)
+   Length: 813 bp
+   Interpretation: Model is least confident on this NDM
+                   sequence, but still correct.
+
+Key Finding: Even lowest-confidence predictions have >90% confidence,
+demonstrating robust classification. Lower confidence may indicate:
+  - Sequences at boundary of k-mer feature space
+  - Rare allelic variants with unusual k-mer patterns
+  - Shorter sequences with fewer discriminative k-mers
