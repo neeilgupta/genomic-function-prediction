@@ -417,7 +417,7 @@ arg-classifier/
 
 If you use this code or approach in your research, please cite:
 ```
-[Your Name], [Year]. ARG Family Classifier: Rapid Machine Learning-Based
+Neeil Gupta, 2026. ARG Family Classifier: Rapid Machine Learning-Based
 Classification of Carbapenemase Resistance Genes. Purdue Biomakers Symposium.
 ```
 
