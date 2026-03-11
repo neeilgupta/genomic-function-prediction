@@ -1,0 +1,35 @@
+{
+  "best_C": 0.1,
+  "cv_folds": 5,
+  "cv_results": [
+    {
+      "C": 0.01,
+      "mean_cv_acc": 0.5162,
+      "std_cv_acc": 0.0031
+    },
+    {
+      "C": 0.1,
+      "mean_cv_acc": 1.0,
+      "std_cv_acc": 0.0
+    },
+    {
+      "C": 1.0,
+      "mean_cv_acc": 1.0,
+      "std_cv_acc": 0.0
+    },
+    {
+      "C": 10.0,
+      "mean_cv_acc": 1.0,
+      "std_cv_acc": 0.0
+    },
+    {
+      "C": 100.0,
+      "mean_cv_acc": 1.0,
+      "std_cv_acc": 0.0
+    }
+  ],
+  "best_cv_acc": 1.0,
+  "train_acc": 1.0,
+  "val_acc": 1.0,
+  "gridsearch_time_s": 1.1
+}
