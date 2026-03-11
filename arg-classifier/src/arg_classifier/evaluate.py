@@ -5,10 +5,12 @@ import sys
 from pathlib import Path
 
 import numpy as np
+import scipy.sparse
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import seaborn as sns
+from sklearn.calibration import calibration_curve
 from sklearn.metrics import (
     accuracy_score,
     f1_score,
@@ -35,7 +37,7 @@ def run(config_path: str = "configs/mvp.yaml") -> None:
     FAMILIES = list(le.classes_)
 
     # ── Load test data ────────────────────────────────────────────────────────
-    X_test     = np.load(artifacts_dir / "X_test.npy")
+    X_test     = scipy.sparse.load_npz(artifacts_dir / "X_test.npz")
     y_test_raw = np.load(artifacts_dir / "y_test.npy", allow_pickle=True)
     y_test     = le.transform(y_test_raw)
 
@@ -89,6 +91,55 @@ def run(config_path: str = "configs/mvp.yaml") -> None:
     plt.savefig(cm_path, dpi=150)
     plt.close()
     print(f"\n✓ Confusion matrix plot → {cm_path}")
+
+    # ── Calibration Check ─────────────────────────────────────────────────────
+    max_proba = y_proba.max(axis=1)              # top-class confidence per sequence
+    y_correct = (y_pred == y_test).astype(int)   # 1=correct prediction, 0=wrong
+
+    # ECE: weighted mean |acc_in_bin - conf_in_bin| across 10 uniform bins
+    n_bins = 10
+    ece = 0.0
+    N   = len(max_proba)
+    for i in range(n_bins):
+        lo, hi = i / n_bins, (i + 1) / n_bins
+        mask = (max_proba >= lo) & (max_proba < hi)
+        if mask.sum() == 0:
+            continue
+        ece += abs(y_correct[mask].mean() - max_proba[mask].mean()) * mask.sum() / N
+
+    frac_pos, mean_conf = calibration_curve(
+        y_correct, max_proba, n_bins=n_bins, strategy="uniform"
+    )
+
+    print(f"\n{'='*52}")
+    print("CALIBRATION CHECK")
+    print(f"{'='*52}")
+    print(f"  ECE (Expected Calibration Error): {ece:.4f}")
+    print(f"  (0.00 = perfect; >0.05 = consider recalibrating)")
+
+    fig, ax = plt.subplots(figsize=(6, 5))
+    ax.plot([0, 1], [0, 1], "k--", label="Perfect calibration")
+    ax.plot(mean_conf, frac_pos, "s-", color="steelblue", label="LR + TF-IDF")
+    ax.set_xlabel("Mean predicted confidence", fontsize=12)
+    ax.set_ylabel("Fraction correct", fontsize=12)
+    ax.set_title("Reliability Diagram (Top-Class Calibration)", fontsize=13)
+    ax.legend()
+    ax.set_xlim(0, 1)
+    ax.set_ylim(0, 1)
+    plt.tight_layout()
+    cal_path = reports_dir / "calibration_plot.png"
+    plt.savefig(cal_path, dpi=150)
+    plt.close()
+    print(f"✓ Calibration plot      → {cal_path}")
+
+    calibration_stats = {
+        "ece": round(ece, 4),
+        "n_bins": n_bins,
+        "reliability": [
+            {"mean_conf": round(float(c), 4), "fraction_correct": round(float(a), 4)}
+            for c, a in zip(mean_conf, frac_pos)
+        ],
+    }
 
     # ── OOD Detection ─────────────────────────────────────────────────────────
     ood_threshold = cfg.get("inference", {}).get("ood_threshold")
@@ -152,6 +203,7 @@ def run(config_path: str = "configs/mvp.yaml") -> None:
         "confusion_matrix": cm.tolist(),
         "labels": FAMILIES,
     }
+    ml_results["calibration"] = calibration_stats
     if ood_stats is not None:
         ml_results["ood_detection"] = ood_stats
     ml_path = reports_dir / "ml_results.json"

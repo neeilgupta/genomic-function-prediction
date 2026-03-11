@@ -12,6 +12,7 @@ import time
 from pathlib import Path
 
 import numpy as np
+import scipy.sparse
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import GridSearchCV, StratifiedKFold
 from sklearn.preprocessing import LabelEncoder
@@ -30,8 +31,8 @@ def run(config_path: str = "configs/mvp.yaml") -> None:
     reports_dir.mkdir(parents=True, exist_ok=True)
 
     # ── Load features & labels ────────────────────────────────────────────────
-    X_train = np.load(artifacts_dir / "X_train.npy")
-    X_val   = np.load(artifacts_dir / "X_val.npy")
+    X_train = scipy.sparse.load_npz(artifacts_dir / "X_train.npz")
+    X_val   = scipy.sparse.load_npz(artifacts_dir / "X_val.npz")
     y_train_raw = np.load(artifacts_dir / "y_train.npy", allow_pickle=True)
     y_val_raw   = np.load(artifacts_dir / "y_val.npy",   allow_pickle=True)
 

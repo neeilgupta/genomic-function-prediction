@@ -5,6 +5,7 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+import scipy.sparse
 from sklearn.feature_extraction.text import TfidfVectorizer, CountVectorizer
 
 from .utils import load_config, set_seed
@@ -50,19 +51,17 @@ def run(config_path: str = "configs/mvp.yaml") -> None:
     print(f"k-mer size : {k}")
     print(f"Vocab size : {vocab_size:,}")
 
-    # ── Transform all splits → dense arrays ─────────────────────────────────
+    # ── Transform all splits → sparse matrices ──────────────────────────────
     print("\nFeature matrix shapes:")
     for split in SPLITS:
-        X_sparse = vectorizer.transform(kmer_docs[split])
-        X_dense  = X_sparse.toarray().astype(np.float32)
+        X_sparse = vectorizer.transform(kmer_docs[split]).astype(np.float32)
         y        = dfs[split]["label"].values
 
-        np.save(artifacts_dir / f"X_{split}.npy", X_dense)
+        scipy.sparse.save_npz(artifacts_dir / f"X_{split}.npz", X_sparse)
         np.save(artifacts_dir / f"y_{split}.npy", y)
 
-        zeros    = (X_dense == 0).sum()
-        sparsity = 100.0 * zeros / X_dense.size
-        print(f"  X_{split:<5}: {str(X_dense.shape):<20}  sparsity: {sparsity:.1f}%")
+        sparsity = 100.0 * (1 - X_sparse.nnz / (X_sparse.shape[0] * X_sparse.shape[1]))
+        print(f"  X_{split:<5}: {str(X_sparse.shape):<20}  sparsity: {sparsity:.1f}%")
 
     # ── Save vectorizer ──────────────────────────────────────────────────────
     vec_path = artifacts_dir / "vectorizer.pkl"
@@ -70,7 +69,7 @@ def run(config_path: str = "configs/mvp.yaml") -> None:
         pickle.dump(vectorizer, fh)
 
     print(f"\n✓ Saved vectorizer  → {vec_path}")
-    print(f"✓ Saved X/y arrays  → {artifacts_dir}/X_{{train,val,test}}.npy, "
+    print(f"✓ Saved X/y arrays  → {artifacts_dir}/X_{{train,val,test}}.npz, "
           f"y_{{train,val,test}}.npy")
 
 

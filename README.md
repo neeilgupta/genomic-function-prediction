@@ -41,6 +41,8 @@ Confidence: 97.2%
 - ✅ **Probabilistic outputs** - Confidence scores for clinical decision support
 - ✅ **Low resource requirements** - Runs on laptops, deployable to edge devices
 - ✅ **Production-ready CLI** - Easy integration into existing lab workflows
+- ✅ **REST API** - `POST /predict` endpoint for LIMS integration and cloud deployment
+- ✅ **OOD detection** - Outputs `UNKNOWN` for novel sequences below confidence threshold
 - ✅ **Principled model selection** - Regularization strength chosen via 5-fold cross-validation
 - ✅ **Cluster-aware evaluation** - Test set guaranteed ≥3 SNPs from all training sequences
 
@@ -179,7 +181,7 @@ pip install -r requirements.txt
 
 ## Quick Start
 
-### Predict on Your Own FASTA
+### Option 1: CLI (file in, CSV out)
 ```bash
 python -m src.arg_classifier.predict \
     --fasta my_sequences.fasta \
@@ -204,6 +206,36 @@ patient_sample_B,NDM,0.9540,0.0080,0.0050,0.0080,0.9540,0.0060,0.0070,0.0100,0.0
 **Interpreting results:**
 - `patient_sample_A` is **97.2% likely KPC** (very confident)
 - `patient_sample_B` is **95.4% likely NDM** (confident, but note 2% chance of VIM)
+- If confidence is below threshold (default 0.25), `predicted_label` shows `UNKNOWN`
+
+### Option 2: REST API (for LIMS integration or cloud deployment)
+```bash
+# Start the server
+python -m uvicorn src.arg_classifier.api:app --reload
+
+# Check server health
+curl http://localhost:8000/health
+
+# Submit a FASTA sequence
+curl -X POST http://localhost:8000/predict \
+  -H "Content-Type: text/plain" \
+  --data-binary ">patient_sample_A
+ATGCAAACCCTGACGCGGTTATCGGAAAGTTGTTGCCGCGCTTATCGGTAACGTTACTGCT"
+```
+
+**API response (JSON):**
+```json
+[
+  {
+    "sequence_id": "patient_sample_A",
+    "predicted_label": "KPC",
+    "confidence": 0.7770,
+    "prob_CTX-M": 0.0374, "prob_IMP": 0.0300, "prob_KPC": 0.7770,
+    "prob_NDM": 0.0248, "prob_OXA": 0.0383, "prob_SHV": 0.0387,
+    "prob_TEM": 0.0325, "prob_VIM": 0.0213
+  }
+]
+```
 
 ---
 
@@ -363,35 +395,22 @@ python -m src.arg_classifier.evaluate
 
 ## Future Improvements
 
-### 1. "Unknown" / Out-of-Distribution Detection
-**Current:** Model always predicts one of 8 known families
-
-**Proposed:** Add confidence threshold — output "UNKNOWN" when `max(probabilities) < threshold`
-- Critical for clinical deployment: the model must say "I don't know" for novel sequences
-- Add an "other" negative class from non-target CARD sequences to train the boundary
-
-### 2. REST API Deployment
-**Current:** Local CLI tool only
-
-**Proposed:** FastAPI `POST /predict` endpoint accepting FASTA text, returning JSON
-- Deployable to AWS Lambda or GCP Cloud Run with no changes
-- Enables integration into hospital LIMS (Lab Information Management Systems)
-
-### 3. Calibration Verification
+### 1. Calibration Verification
 **Current:** Probability outputs are raw softmax scores
 
 **Proposed:** Verify calibration with `sklearn.calibration.calibration_curve`
 - A model claiming "90% confidence" should be right exactly 90% of the time
 - Apply Platt scaling or isotonic regression if miscalibrated
+- Enables users to trust the confidence score for clinical decision-making
 
-### 4. Expand to More Families
+### 2. Expand to More Families
 **Current:** 8 families covering beta-lactamases
 
 **Proposed:** Add aminoglycoside (AAC, ANT, APH), fluoroquinolone (QNR), and polymyxin (MCR) resistance genes
 - Adding a new family = 1 config line change (`data.families` in `configs/mvp.yaml`)
-- No source code edits required (implemented in Milestone 3)
+- No source code edits required
 
-### 5. Deep Learning
+### 3. Deep Learning
 **Current:** TF-IDF + Logistic Regression (simple, interpretable)
 
 **Proposed:** Replace with 1-D CNN or Transformer encoder
@@ -399,7 +418,7 @@ python -m src.arg_classifier.evaluate
 - Capture long-range dependencies (>5 bp)
 - **Expected:** Meaningful accuracy improvement when sequences are more ambiguous between families
 
-### 6. Protein-Space Features
+### 4. Protein-Space Features
 **Current:** DNA sequence analysis only
 
 **Proposed:** Translate to amino acids, use ESM-2 embeddings (Meta, pre-trained)
@@ -434,8 +453,9 @@ arg-classifier/
     ├── featurize_kmer.py      # K-mer TF-IDF featurization
     ├── baseline_similarity.py # Jaccard kNN baseline
     ├── train.py               # Logistic Regression + GridSearchCV
-    ├── evaluate.py            # Metrics, confusion matrix, comparison
-    └── predict.py             # CLI inference tool
+    ├── evaluate.py            # Metrics, confusion matrix, OOD detection
+    ├── predict.py             # CLI inference tool (with --threshold for OOD)
+    └── api.py                 # FastAPI REST endpoint (GET /health, POST /predict)
 ```
 
 ---
@@ -472,6 +492,6 @@ Classification of Carbapenemase Resistance Genes. Purdue Biomakers Symposium.
 - [x] Improvement 1: Cluster-aware splitting — Jaccard threshold=0.98 prevents near-duplicate leakage across train/val/test
 - [x] Improvement 2: GridSearchCV + 5-fold cross-validation — principled C selection, results in `reports/training_report.json`
 - [x] Improvement 3: 8-class expansion (KPC, NDM, VIM, IMP, OXA, CTX-M, TEM, SHV) — config-driven, adding a 9th family is a 1-line change
-- [ ] Improvement 4: Unknown/OOD detection
-- [ ] Improvement 5: FastAPI REST endpoint
+- [x] Improvement 4: OOD detection — confidence threshold flags novel sequences as `UNKNOWN` (100% TPR, 0% FPR on synthetic test)
+- [x] Improvement 5: FastAPI REST endpoint — `POST /predict` accepts FASTA, returns JSON; `GET /health` reports loaded families
 - [ ] Improvement 6: Calibration verification + sparse matrix optimization

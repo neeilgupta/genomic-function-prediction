@@ -157,6 +157,36 @@
     "TEM",
     "VIM"
   ],
+  "calibration": {
+    "ece": 0.4398,
+    "n_bins": 10,
+    "reliability": [
+      {
+        "mean_conf": 0.2924,
+        "fraction_correct": 1.0
+      },
+      {
+        "mean_conf": 0.3202,
+        "fraction_correct": 1.0
+      },
+      {
+        "mean_conf": 0.4812,
+        "fraction_correct": 1.0
+      },
+      {
+        "mean_conf": 0.5571,
+        "fraction_correct": 1.0
+      },
+      {
+        "mean_conf": 0.638,
+        "fraction_correct": 1.0
+      },
+      {
+        "mean_conf": 0.7414,
+        "fraction_correct": 1.0
+      }
+    ]
+  },
   "ood_detection": {
     "threshold": 0.25,
     "n_test": 134,
