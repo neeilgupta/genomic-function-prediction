@@ -40,7 +40,6 @@ def run(config_path: str = "configs/mvp.yaml") -> None:
         C=model_cfg["C"],
         max_iter=model_cfg["max_iter"],
         solver="lbfgs",
-        multi_class="multinomial",
         random_state=cfg["seed"],
         verbose=0,
     )

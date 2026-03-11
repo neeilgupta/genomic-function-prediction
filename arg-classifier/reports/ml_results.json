@@ -7,64 +7,64 @@
       "precision": 1.0,
       "recall": 1.0,
       "f1-score": 1.0,
-      "support": 35.0
+      "support": 28.0
     },
     "NDM": {
       "precision": 1.0,
       "recall": 1.0,
       "f1-score": 1.0,
-      "support": 10.0
+      "support": 20.0
     },
     "VIM": {
       "precision": 1.0,
       "recall": 1.0,
       "f1-score": 1.0,
-      "support": 14.0
+      "support": 12.0
     },
     "IMP": {
       "precision": 1.0,
       "recall": 1.0,
       "f1-score": 1.0,
-      "support": 15.0
+      "support": 13.0
     },
     "accuracy": 1.0,
     "macro avg": {
       "precision": 1.0,
       "recall": 1.0,
       "f1-score": 1.0,
-      "support": 74.0
+      "support": 73.0
     },
     "weighted avg": {
       "precision": 1.0,
       "recall": 1.0,
       "f1-score": 1.0,
-      "support": 74.0
+      "support": 73.0
     }
   },
   "confusion_matrix": [
     [
-      35,
+      28,
       0,
       0,
       0
     ],
     [
       0,
-      10,
+      20,
       0,
       0
     ],
     [
       0,
       0,
-      14,
+      12,
       0
     ],
     [
       0,
       0,
       0,
-      15
+      13
     ]
   ],
   "labels": [

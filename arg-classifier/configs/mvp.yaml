@@ -8,6 +8,7 @@ split:
   train: 0.7
   val: 0.15
   test: 0.15
+  cluster_identity: 0.98  # Jaccard threshold; sequences above this go into the same cluster
 features:
   kmer_size: 5
   use_tfidf: true
