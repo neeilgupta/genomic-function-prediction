@@ -45,6 +45,7 @@ Confidence: 97.2%
 - ✅ **OOD detection** - Outputs `UNKNOWN` for novel sequences below confidence threshold
 - ✅ **Principled model selection** - Regularization strength chosen via 5-fold cross-validation
 - ✅ **Cluster-aware evaluation** - Test set guaranteed ≥3 SNPs from all training sequences
+- ✅ **Calibration audited** - ECE metric + reliability diagram confirm confidence scores are interpretable; underconfidence documented for future Platt scaling
 
 ---
 
@@ -395,13 +396,10 @@ python -m src.arg_classifier.evaluate
 
 ## Future Improvements
 
-### 1. Calibration Verification
-**Current:** Probability outputs are raw softmax scores
+### 1. Platt Scaling (Confidence Recalibration)
+**Current:** Calibration audit shows ECE = 0.44 — model is systematically underconfident. It's always correct on the test set but only reports 30–77% confidence. Root cause: C=0.1 regularization keeps logits small, flattening the softmax.
 
-**Proposed:** Verify calibration with `sklearn.calibration.calibration_curve`
-- A model claiming "90% confidence" should be right exactly 90% of the time
-- Apply Platt scaling or isotonic regression if miscalibrated
-- Enables users to trust the confidence score for clinical decision-making
+**Proposed:** Fit a `CalibratedClassifierCV(method="sigmoid")` on the validation set after GridSearchCV, then re-evaluate ECE. Expected outcome: reliability diagram points move onto the diagonal, making "70% confidence" actually mean 70% correct.
 
 ### 2. Expand to More Families
 **Current:** 8 families covering beta-lactamases
@@ -434,12 +432,14 @@ arg-classifier/
 ├── data/
 │   ├── raw/                   # card_sequences.fasta, metadata.csv
 │   └── processed/             # train / val / test CSVs
-├── artifacts/                 # model.pkl, vectorizer.pkl, *.npy
+├── artifacts/                 # model.pkl, vectorizer.pkl, X_*.npz (sparse), y_*.npy
 ├── reports/                   # JSON metrics, PNG plots, text summaries
 │   ├── baseline_results.json  # kNN performance
-│   ├── ml_results.json        # ML model performance
+│   ├── ml_results.json        # ML model performance + calibration + OOD stats
+│   ├── training_report.json   # GridSearchCV results, best C, CV fold scores
 │   ├── comparison.txt         # Side-by-side comparison
-│   ├── confusion_matrix.png   # Visualization
+│   ├── confusion_matrix.png   # Per-class classification heatmap
+│   ├── calibration_plot.png   # Reliability diagram (ECE = 0.44, underconfident)
 │   ├── error_analysis.txt     # Edge case analysis
 │   └── project_summary.txt    # One-page overview
 ├── scripts/
@@ -453,7 +453,7 @@ arg-classifier/
     ├── featurize_kmer.py      # K-mer TF-IDF featurization
     ├── baseline_similarity.py # Jaccard kNN baseline
     ├── train.py               # Logistic Regression + GridSearchCV
-    ├── evaluate.py            # Metrics, confusion matrix, OOD detection
+    ├── evaluate.py            # Metrics, confusion matrix, calibration check, OOD detection
     ├── predict.py             # CLI inference tool (with --threshold for OOD)
     └── api.py                 # FastAPI REST endpoint (GET /health, POST /predict)
 ```
@@ -494,4 +494,4 @@ Classification of Carbapenemase Resistance Genes. Purdue Biomakers Symposium.
 - [x] Improvement 3: 8-class expansion (KPC, NDM, VIM, IMP, OXA, CTX-M, TEM, SHV) — config-driven, adding a 9th family is a 1-line change
 - [x] Improvement 4: OOD detection — confidence threshold flags novel sequences as `UNKNOWN` (100% TPR, 0% FPR on synthetic test)
 - [x] Improvement 5: FastAPI REST endpoint — `POST /predict` accepts FASTA, returns JSON; `GET /health` reports loaded families
-- [ ] Improvement 6: Calibration verification + sparse matrix optimization
+- [x] Improvement 6: Calibration audit (ECE=0.44, underconfidence documented) + sparse matrix storage (X_*.npz, 2.2× smaller on disk)
