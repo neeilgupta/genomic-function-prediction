@@ -36,16 +36,16 @@ Confidence: 97.2%
 ```
 
 **Key capabilities:**
-- ✅ **Instant classification** - 10ms per sequence (vs 700ms for BLAST-like methods)
-- ✅ **High accuracy** - 100% on test set across all 8 families
-- ✅ **Probabilistic outputs** - Confidence scores for clinical decision support
-- ✅ **Low resource requirements** - Runs on laptops, deployable to edge devices
-- ✅ **Production-ready CLI** - Easy integration into existing lab workflows
-- ✅ **REST API** - `POST /predict` endpoint for LIMS integration and cloud deployment
-- ✅ **OOD detection** - Outputs `UNKNOWN` for novel sequences below confidence threshold
-- ✅ **Principled model selection** - Regularization strength chosen via 5-fold cross-validation
-- ✅ **Cluster-aware evaluation** - Test set guaranteed ≥3 SNPs from all training sequences
-- ✅ **Calibration audited** - ECE metric + reliability diagram confirm confidence scores are interpretable; underconfidence documented for future Platt scaling
+- **Instant classification** - 10ms per sequence (vs 700ms for BLAST-like methods)
+- **High accuracy** - 100% on test set across all 8 families
+- **Probabilistic outputs** - Confidence scores for clinical decision support
+- **Low resource requirements** - Runs on laptops, deployable to edge devices
+- **Production-ready CLI** - Easy integration into existing lab workflows
+- **REST API** - `POST /predict` endpoint for LIMS integration and cloud deployment
+- **OOD detection** - Outputs `UNKNOWN` for novel sequences below confidence threshold
+- **Principled model selection** - Regularization strength chosen via 5-fold cross-validation
+- **Cluster-aware evaluation** - Test set guaranteed ≥3 SNPs from all training sequences
+- **Calibration audited** - ECE metric + reliability diagram confirm confidence scores are interpretable; underconfidence documented for future Platt scaling
 
 ---
 
