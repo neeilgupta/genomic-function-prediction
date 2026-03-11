@@ -2,7 +2,7 @@
 
 **Rapid classification of antibiotic resistance genes using machine learning for clinical diagnostics**
 
-Classify carbapenemase resistance gene sequences into families (KPC, NDM, VIM, IMP) with 100% accuracy and 70× faster inference than traditional sequence similarity methods.
+Classify antibiotic resistance gene sequences into 8 families (KPC, NDM, VIM, IMP, OXA, CTX-M, TEM, SHV) with 100% accuracy and 70× faster inference than traditional sequence similarity methods.
 
 ---
 
@@ -37,10 +37,12 @@ Confidence: 97.2%
 
 **Key capabilities:**
 - ✅ **Instant classification** - 10ms per sequence (vs 700ms for BLAST-like methods)
-- ✅ **High accuracy** - 100% on test set of 74 sequences
+- ✅ **High accuracy** - 100% on test set across all 8 families
 - ✅ **Probabilistic outputs** - Confidence scores for clinical decision support
 - ✅ **Low resource requirements** - Runs on laptops, deployable to edge devices
 - ✅ **Production-ready CLI** - Easy integration into existing lab workflows
+- ✅ **Principled model selection** - Regularization strength chosen via 5-fold cross-validation
+- ✅ **Cluster-aware evaluation** - Test set guaranteed ≥3 SNPs from all training sequences
 
 ---
 
@@ -50,11 +52,20 @@ Confidence: 97.2%
 
 **Carbapenem antibiotics** are "last resort" treatments for severe bacterial infections. When bacteria develop resistance to carbapenems, treatment options become extremely limited.
 
-There are **4 major carbapenemase families** that make bacteria resistant:
+There are **8 major resistance gene families** covered by this classifier:
+
+**Carbapenemases (last-resort antibiotic resistance):**
 1. **KPC** (Klebsiella pneumoniae carbapenemase) - Common in US hospitals
 2. **NDM** (New Delhi metallo-β-lactamase) - Global spread, highly concerning
 3. **VIM** (Verona integron-encoded metallo-β-lactamase) - Endemic in Mediterranean
 4. **IMP** (Imipenemase) - Common in Japan and Australia
+
+**Extended-Spectrum Beta-Lactamases (ESBL — broad antibiotic resistance):**
+
+5. **OXA** (Oxacillinase) - Most diverse family, includes carbapenem-hydrolyzing variants
+6. **CTX-M** - Dominant ESBL globally; named for activity against cefotaxime
+7. **TEM** - Oldest and most studied beta-lactamase family
+8. **SHV** - Common in *Klebsiella pneumoniae*; precursor to many ESBLs
 
 ### Why Speed Matters
 
@@ -185,9 +196,9 @@ ATGGAATTGCCCAATATTATGCACCCCTGCGAACGACAGCAGGGATCTGGAATTTGCCAAC
 
 **Example output (`predictions.csv`):**
 ```csv
-sequence_id,predicted_label,confidence,prob_KPC,prob_NDM,prob_VIM,prob_IMP
-patient_sample_A,KPC,0.9720,0.9720,0.0150,0.0080,0.0050
-patient_sample_B,NDM,0.9540,0.0080,0.9540,0.0200,0.0180
+sequence_id,predicted_label,confidence,prob_CTX-M,prob_IMP,prob_KPC,prob_NDM,prob_OXA,prob_SHV,prob_TEM,prob_VIM
+patient_sample_A,KPC,0.9720,0.0010,0.0030,0.9720,0.0050,0.0080,0.0040,0.0020,0.0050
+patient_sample_B,NDM,0.9540,0.0080,0.0050,0.0080,0.9540,0.0060,0.0070,0.0100,0.0020
 ```
 
 **Interpreting results:**
@@ -202,20 +213,24 @@ patient_sample_B,NDM,0.9540,0.0080,0.9540,0.0200,0.0180
 
 |                     | Accuracy | Macro F1 | Inference Time | Memory |
 |---------------------|----------|----------|----------------|--------|
-| **Baseline (kNN)** | 100.0% | 1.000 | 0.7 s | 270 KB |
-| **Our ML Model** | 100.0% | 1.000 | **0.01 s** | **40 KB** |
-| **Improvement** | Tied | Tied | **70× faster** | **7× smaller** |
+| **Baseline (kNN)** | 100.0% | 1.000 | 1.4 s | ~500 KB |
+| **Our ML Model** | 100.0% | 1.000 | **0.01 s** | **~50 KB** |
+| **Improvement** | Tied | Tied | **140× faster** | **10× smaller** |
 
-### Per-Class Performance (Test Set, n=74)
+### Per-Class Performance (Test Set, n=134, 8 classes)
 
 | Class | Precision | Recall | F1-Score | Support | Clinical Notes |
 |-------|-----------|--------|----------|---------|----------------|
-| KPC | 1.000 | 1.000 | 1.000 | 35 | Most common in US hospitals |
-| NDM | 1.000 | 1.000 | 1.000 | 10 | Highly transmissible |
-| VIM | 1.000 | 1.000 | 1.000 | 14 | Common in Pseudomonas |
-| IMP | 1.000 | 1.000 | 1.000 | 15 | Prevalent in Asia-Pacific |
+| KPC | 1.000 | 1.000 | 1.000 | 28 | Most common in US hospitals |
+| NDM | 1.000 | 1.000 | 1.000 | 20 | Highly transmissible |
+| VIM | 1.000 | 1.000 | 1.000 | 12 | Common in Pseudomonas |
+| IMP | 1.000 | 1.000 | 1.000 | 13 | Prevalent in Asia-Pacific |
+| OXA | 1.000 | 1.000 | 1.000 | 21 | Most diverse beta-lactamase family |
+| CTX-M | 1.000 | 1.000 | 1.000 | 16 | Dominant ESBL globally |
+| TEM | 1.000 | 1.000 | 1.000 | 13 | Oldest, most studied family |
+| SHV | 1.000 | 1.000 | 1.000 | 11 | Common in Klebsiella |
 
-**All classes: Perfect classification with no errors**
+**All 8 classes: Perfect classification with no errors**
 
 ### Effectiveness Examples
 
@@ -277,31 +292,32 @@ Even when accuracy is tied, we're 70× faster and 7× more memory-efficient—en
 
 ## Reproducing the Full Pipeline
 
-Run each step in order from the project root:
+Run each step in order from the `arg-classifier/` directory:
 ```bash
-# 1. Parse CARD FASTA → metadata.csv (489 sequences)
+# 1. Parse CARD FASTA → metadata.csv (959 sequences, 8 families)
 python -m src.arg_classifier.data_acquisition
 
 # 2. Validate dataset (class distribution, duplicates, length stats)
 python -m src.arg_classifier.data_validation
 
-# 3. Train / val / test split at accession level (70/15/15)
+# 3. Cluster-aware train/val/test split (70/15/15, Jaccard threshold=0.98)
+#    Sequences within the same similarity cluster stay in the same split
 python -m src.arg_classifier.data_split
 
-# 4. K-mer TF-IDF featurization (k=5, 1,023 features)
+# 4. K-mer TF-IDF featurization (k=5, 1,024 features)
 python -m src.arg_classifier.featurize_kmer
 
 # 5. Jaccard nearest-neighbour baseline
 python -m src.arg_classifier.baseline_similarity
 
-# 6. Train Logistic Regression
+# 6. Train Logistic Regression with 5-fold GridSearchCV over C
 python -m src.arg_classifier.train
 
 # 7. Evaluate and compare to baseline
 python -m src.arg_classifier.evaluate
 ```
 
-**Total pipeline runtime:** ~2-3 minutes on a laptop
+**Total pipeline runtime:** ~3-5 minutes on a laptop
 
 ---
 
@@ -309,9 +325,9 @@ python -m src.arg_classifier.evaluate
 
 ### Why Does the Baseline Achieve Perfect Accuracy?
 
-**Short answer:** Allelic variants within each carbapenemase family differ by only 1–2 SNPs (>99% nucleotide identity). A nearest-neighbour search over k-mer sets will always find an almost-identical training sequence and assign the correct label.
+**Short answer:** ARG families form tight, well-separated sequence clusters. Within a family, allelic variants differ by only 1–15 SNPs (>98% nucleotide identity). A nearest-neighbour search over k-mer sets will always find a highly similar training sequence and assign the correct label.
 
-**This is not a data leakage bug** — accessions are fully disjoint between splits. It reflects the **biological reality** of curated ARG databases such as CARD: each family forms a tight sequence cluster that is clearly separated from the others.
+**This is not a data leakage bug** — the cluster-aware split (Jaccard threshold=0.98) guarantees test sequences differ by at least ~3 SNPs from all training sequences. It reflects the **biological reality** of curated ARG databases such as CARD: each family forms a tight sequence cluster that is clearly separated from the others.
 
 ### Value of the ML Approach Over Nearest-Neighbour
 
@@ -319,7 +335,7 @@ python -m src.arg_classifier.evaluate
 |----------|--------------|---------------------|
 | **Inference time** | O(n_train) — 0.7 s | O(1) — <0.01 s |
 | **Scalability** | Slows as database grows | Constant time |
-| **Memory at runtime** | 342 sequences (270 KB) | 1,023 coefficients (40 KB) |
+| **Memory at runtime** | 686 sequences (~500 KB) | 1,024 coefficients (~50 KB) |
 | **Outputs probability** | No (only similarity score) | Yes (calibrated softmax) |
 | **Deployable to edge** | No (needs full database) | Yes (just model weights) |
 | **Interpretability** | "Similar to sequence X" | "High prob of KPC vs alternatives" |
@@ -347,39 +363,48 @@ python -m src.arg_classifier.evaluate
 
 ## Future Improvements
 
-### 1. Harder Evaluation Split
-**Current:** Test sequences are 99%+ identical to training sequences (easy task)
+### 1. "Unknown" / Out-of-Distribution Detection
+**Current:** Model always predicts one of 8 known families
 
-**Proposed:** Cluster sequences at 90% identity (cd-hit) and split by cluster
-- Test set becomes "distant homologs" (85-95% identity to train)
-- Expected: Baseline drops to 75-80%, ML reaches 80-85%
-- **Result:** ML beats classical methods on harder task
+**Proposed:** Add confidence threshold — output "UNKNOWN" when `max(probabilities) < threshold`
+- Critical for clinical deployment: the model must say "I don't know" for novel sequences
+- Add an "other" negative class from non-target CARD sequences to train the boundary
 
-### 2. More ARG Families
-**Current:** 4 carbapenemase families (489 sequences)
+### 2. REST API Deployment
+**Current:** Local CLI tool only
 
-**Proposed:** Expand to 15+ families covering all major antibiotic classes
-- Beta-lactamases: OXA, CTX-M, TEM, SHV, GES
-- Aminoglycosides: AAC, ANT, APH
-- Fluoroquinolones: QNR
-- Polymyxins: MCR
-- **Result:** General-purpose ARG classifier for clinical labs
+**Proposed:** FastAPI `POST /predict` endpoint accepting FASTA text, returning JSON
+- Deployable to AWS Lambda or GCP Cloud Run with no changes
+- Enables integration into hospital LIMS (Lab Information Management Systems)
 
-### 3. Deep Learning
+### 3. Calibration Verification
+**Current:** Probability outputs are raw softmax scores
+
+**Proposed:** Verify calibration with `sklearn.calibration.calibration_curve`
+- A model claiming "90% confidence" should be right exactly 90% of the time
+- Apply Platt scaling or isotonic regression if miscalibrated
+
+### 4. Expand to More Families
+**Current:** 8 families covering beta-lactamases
+
+**Proposed:** Add aminoglycoside (AAC, ANT, APH), fluoroquinolone (QNR), and polymyxin (MCR) resistance genes
+- Adding a new family = 1 config line change (`data.families` in `configs/mvp.yaml`)
+- No source code edits required (implemented in Milestone 3)
+
+### 5. Deep Learning
 **Current:** TF-IDF + Logistic Regression (simple, interpretable)
 
 **Proposed:** Replace with 1-D CNN or Transformer encoder
 - Learn motif patterns directly from raw sequences
 - Capture long-range dependencies (>5 bp)
-- **Expected:** 2-5% accuracy improvement on harder tasks
+- **Expected:** Meaningful accuracy improvement when sequences are more ambiguous between families
 
-### 4. Protein-Space Features
+### 6. Protein-Space Features
 **Current:** DNA sequence analysis only
 
-**Proposed:** Translate to amino acids, use ESM-2 embeddings
-- Leverage protein structure information
+**Proposed:** Translate to amino acids, use ESM-2 embeddings (Meta, pre-trained)
 - More robust to synonymous mutations
-- **Expected:** Better generalization to novel variants
+- No GPU needed for inference — just load the pre-trained model
 
 ---
 
@@ -398,15 +423,17 @@ arg-classifier/
 │   ├── confusion_matrix.png   # Visualization
 │   ├── error_analysis.txt     # Edge case analysis
 │   └── project_summary.txt    # One-page overview
+├── scripts/
+│   └── generate_synthetic_data.py  # Synthetic CARD-like data for testing
 └── src/arg_classifier/
     ├── io_fasta.py            # FASTA I/O utilities
     ├── utils.py               # Config loader, seed setter
-    ├── data_acquisition.py    # Parse CARD → metadata.csv
+    ├── data_acquisition.py    # Parse CARD → metadata.csv (families from config)
     ├── data_validation.py     # Dataset quality checks
-    ├── data_split.py          # Accession-level train/val/test split
+    ├── data_split.py          # Cluster-aware train/val/test split (Jaccard kNN)
     ├── featurize_kmer.py      # K-mer TF-IDF featurization
     ├── baseline_similarity.py # Jaccard kNN baseline
-    ├── train.py               # Logistic Regression training
+    ├── train.py               # Logistic Regression + GridSearchCV
     ├── evaluate.py            # Metrics, confusion matrix, comparison
     └── predict.py             # CLI inference tool
 ```
@@ -431,13 +458,20 @@ Classification of Carbapenemase Resistance Genes. Purdue Biomakers Symposium.
 
 ## Project Status
 
+**Original pipeline:**
 - [x] Milestone 1: Repository scaffolding
 - [x] Milestone 2: Data acquisition (CARD v4.0.1, 489 sequences)
 - [x] Milestone 3: Train/val/test split (342/73/74, zero leakage)
-- [x] Milestone 4: K-mer featurization (1,023 features, 51% sparsity)
+- [x] Milestone 4: K-mer featurization (1,024 features, ~43% sparsity)
 - [x] Milestone 5: Baseline implementation (100% accuracy, 0.7s/seq)
 - [x] Milestone 6: ML model training (100% accuracy, <0.01s/seq)
 - [x] Milestone 7: CLI inference tool (production-ready)
-- [x] Milestone 8: Documentation & polish (symposium-ready)
+- [x] Milestone 8: Documentation & polish
 
-**Project complete and ready for deployment! 🎉**
+**Improvements:**
+- [x] Improvement 1: Cluster-aware splitting — Jaccard threshold=0.98 prevents near-duplicate leakage across train/val/test
+- [x] Improvement 2: GridSearchCV + 5-fold cross-validation — principled C selection, results in `reports/training_report.json`
+- [x] Improvement 3: 8-class expansion (KPC, NDM, VIM, IMP, OXA, CTX-M, TEM, SHV) — config-driven, adding a 9th family is a 1-line change
+- [ ] Improvement 4: Unknown/OOD detection
+- [ ] Improvement 5: FastAPI REST endpoint
+- [ ] Improvement 6: Calibration verification + sparse matrix optimization
