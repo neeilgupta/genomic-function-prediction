@@ -7,7 +7,6 @@ import pandas as pd
 from .utils import load_config
 
 MIN_CLASS_SIZE = 50
-FAMILIES = ("KPC", "NDM", "VIM", "IMP")
 
 
 def run(config_path: str = "configs/mvp.yaml") -> None:
@@ -16,6 +15,7 @@ def run(config_path: str = "configs/mvp.yaml") -> None:
     meta_path = raw_dir / "metadata.csv"
     summary_path = raw_dir / "data_summary.txt"
 
+    families = tuple(cfg["data"]["families"])
     df = pd.read_csv(meta_path)
 
     lines = []
@@ -28,7 +28,7 @@ def run(config_path: str = "configs/mvp.yaml") -> None:
     # Class distribution
     lines.append("\nClass distribution:")
     dist = df["label"].value_counts()
-    for fam in FAMILIES:
+    for fam in families:
         n = dist.get(fam, 0)
         lines.append(f"  {fam}: {n}")
     lines.append(f"  TOTAL: {dist.sum()}")
@@ -49,7 +49,7 @@ def run(config_path: str = "configs/mvp.yaml") -> None:
     # Class size check
     lines.append(f"\nClass size check (≥{MIN_CLASS_SIZE}):")
     all_ok = True
-    for fam in FAMILIES:
+    for fam in families:
         n = dist.get(fam, 0)
         status = "✓" if n >= MIN_CLASS_SIZE else "✗ FAIL"
         lines.append(f"  {fam}: {n} {status}")

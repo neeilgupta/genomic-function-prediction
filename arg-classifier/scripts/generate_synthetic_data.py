@@ -13,10 +13,16 @@ from pathlib import Path
 random.seed(42)
 
 FAMILIES = {
-    "KPC": {"n": 230, "length": 882},
-    "NDM": {"n": 67, "length": 813},
-    "VIM": {"n": 91, "length": 801},
-    "IMP": {"n": 101, "length": 861},
+    # Original 4 carbapenemase families
+    "KPC":   {"n": 230, "length": 882},
+    "NDM":   {"n": 67,  "length": 813},
+    "VIM":   {"n": 91,  "length": 801},
+    "IMP":   {"n": 101, "length": 861},
+    # Extended families (Milestone 3)
+    "OXA":   {"n": 150, "length": 801},   # OXA-type beta-lactamases
+    "CTX-M": {"n": 120, "length": 876},   # Extended-spectrum beta-lactamases
+    "TEM":   {"n": 110, "length": 861},   # TEM-type (oldest/most common)
+    "SHV":   {"n": 90,  "length": 861},   # SHV-type (common in Klebsiella)
 }
 
 ARO_COUNTER = 3000000

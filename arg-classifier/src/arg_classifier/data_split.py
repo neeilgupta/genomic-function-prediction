@@ -17,7 +17,6 @@ import numpy as np
 
 from .utils import load_config, set_seed
 
-FAMILIES = ("KPC", "NDM", "VIM", "IMP")
 MIN_TEST_CLASS = 10
 
 
@@ -112,6 +111,7 @@ def run(config_path: str = "configs/mvp.yaml") -> None:
     threshold = cfg["split"].get("cluster_identity", 0.98)
     train_frac = cfg["split"]["train"]
     val_frac   = cfg["split"]["val"]
+    families  = tuple(cfg["data"]["families"])
 
     df = pd.read_csv(raw_dir / "metadata.csv")
     print(f"Loaded {len(df)} sequences from metadata.csv")
@@ -120,7 +120,7 @@ def run(config_path: str = "configs/mvp.yaml") -> None:
     split_col = [""] * len(df)
     cluster_report = {}
 
-    for fam in FAMILIES:
+    for fam in families:
         mask = df["label"] == fam
         fam_idx = df.index[mask].tolist()
         seqs    = df.loc[fam_idx, "sequence"].tolist()
@@ -169,24 +169,24 @@ def run(config_path: str = "configs/mvp.yaml") -> None:
     lines.append("=" * 60)
     lines.append(f"\nClustering: k={k}, Jaccard threshold={threshold}")
     lines.append(f"\nClusters per family:")
-    for fam in FAMILIES:
+    for fam in families:
         n_c = cluster_report[fam]
         note = " ← single cluster, split randomly" if n_c == 1 else ""
         lines.append(f"  {fam}: {n_c} cluster(s){note}")
 
-    lines.append(f"\n{'Split':<8} {'Total':>6}  " + "  ".join(f"{f:>5}" for f in FAMILIES))
+    lines.append(f"\n{'Split':<8} {'Total':>6}  " + "  ".join(f"{f:>5}" for f in families))
     lines.append("-" * 60)
 
     warnings = []
     for split_name, split_df in [("train", train_df), ("val", val_df), ("test", test_df)]:
         dist   = split_df["label"].value_counts()
-        counts = [dist.get(f, 0) for f in FAMILIES]
+        counts = [dist.get(f, 0) for f in families]
         lines.append(
             f"{split_name:<8} {len(split_df):>6}  " +
             "  ".join(f"{c:>5}" for c in counts)
         )
         if split_name == "test":
-            for fam, c in zip(FAMILIES, counts):
+            for fam, c in zip(families, counts):
                 if c < MIN_TEST_CLASS:
                     warnings.append(f"WARNING: {fam} has only {c} sequences in test set")
 

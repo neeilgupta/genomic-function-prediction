@@ -14,9 +14,6 @@ from sklearn.metrics import (
 
 from .utils import load_config, set_seed
 
-FAMILIES = ("KPC", "NDM", "VIM", "IMP")
-
-
 def kmer_set(sequence: str, k: int) -> frozenset:
     return frozenset(sequence[i:i + k] for i in range(len(sequence) - k + 1))
 
@@ -38,6 +35,7 @@ def run(config_path: str = "configs/mvp.yaml") -> None:
 
     train_df = pd.read_csv(proc_dir / "train.csv")
     test_df  = pd.read_csv(proc_dir / "test.csv")
+    FAMILIES = sorted(train_df["label"].unique())
 
     print(f"Train: {len(train_df)} sequences  |  Test: {len(test_df)} sequences")
     print(f"k-mer size: {k}")

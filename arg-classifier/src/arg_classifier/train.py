@@ -18,7 +18,6 @@ from sklearn.preprocessing import LabelEncoder
 
 from .utils import load_config, set_seed
 
-FAMILIES = ["KPC", "NDM", "VIM", "IMP"]
 CV_FOLDS = 5
 
 

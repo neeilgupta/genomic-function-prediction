@@ -18,8 +18,6 @@ from sklearn.metrics import (
 
 from .utils import load_config
 
-FAMILIES = ["KPC", "NDM", "VIM", "IMP"]
-
 
 def run(config_path: str = "configs/mvp.yaml") -> None:
     cfg = load_config(config_path)
@@ -32,6 +30,7 @@ def run(config_path: str = "configs/mvp.yaml") -> None:
         clf = pickle.load(fh)
     with open(artifacts_dir / "label_encoder.pkl", "rb") as fh:
         le = pickle.load(fh)
+    FAMILIES = list(le.classes_)
 
     # ── Load test data ────────────────────────────────────────────────────────
     X_test     = np.load(artifacts_dir / "X_test.npy")
@@ -72,7 +71,9 @@ def run(config_path: str = "configs/mvp.yaml") -> None:
         print(f"  {fam:<6}" + "  ".join(f"{v:>5}" for v in row))
 
     # ── Confusion matrix plot ─────────────────────────────────────────────────
-    fig, ax = plt.subplots(figsize=(6, 5))
+    n_classes = len(FAMILIES)
+    fig_size = max(6, n_classes)
+    fig, ax = plt.subplots(figsize=(fig_size, fig_size - 1))
     sns.heatmap(
         cm, annot=True, fmt="d", cmap="Blues",
         xticklabels=FAMILIES, yticklabels=FAMILIES,

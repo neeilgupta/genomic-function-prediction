@@ -11,8 +11,6 @@ from .io_fasta import load_fasta
 from .featurize_kmer import seq_to_kmers
 from .utils import load_config
 
-FAMILIES = ["KPC", "NDM", "VIM", "IMP"]
-
 
 def load_artifacts(model_path, vectorizer_path, encoder_path):
     with open(model_path, "rb") as fh:
@@ -31,22 +29,19 @@ def predict(sequences, model, vectorizer, encoder, k):
     y_pred   = model.predict(X)
     y_proba  = model.predict_proba(X)
 
-    # Map encoder classes to FAMILIES column order
-    enc_classes = list(encoder.classes_)  # e.g. ['IMP','KPC','NDM','VIM']
-    fam_indices = {fam: enc_classes.index(fam) for fam in FAMILIES
-                   if fam in enc_classes}
+    # Derive families from label encoder (works for any number of classes)
+    families = list(encoder.classes_)
 
     results = []
     for i, rec in enumerate(sequences):
         pred_label = encoder.inverse_transform([y_pred[i]])[0]
         confidence = float(y_proba[i].max())
-        probs = {fam: round(float(y_proba[i][fam_indices[fam]]), 6)
-                 for fam in FAMILIES if fam in fam_indices}
         results.append({
             "sequence_id":     rec["id"],
             "predicted_label": pred_label,
             "confidence":      round(confidence, 6),
-            **{f"prob_{fam}": probs.get(fam, 0.0) for fam in FAMILIES},
+            **{f"prob_{fam}": round(float(y_proba[i][j]), 6)
+               for j, fam in enumerate(families)},
         })
     return results
 
@@ -89,8 +84,9 @@ def run(args=None):
     results = predict(sequences, model, vectorizer, encoder, k)
 
     # ── Write CSV ─────────────────────────────────────────────────────────────
+    families = list(encoder.classes_)
     fieldnames = ["sequence_id", "predicted_label", "confidence",
-                  "prob_KPC", "prob_NDM", "prob_VIM", "prob_IMP"]
+                  *[f"prob_{fam}" for fam in families]]
     out_path = Path(opts.output)
     with open(out_path, "w", newline="") as fh:
         writer = csv.DictWriter(fh, fieldnames=fieldnames)
@@ -103,7 +99,7 @@ def run(args=None):
     confs = [r["confidence"] for r in results]
 
     print(f"\nPrediction distribution:")
-    for fam in FAMILIES:
+    for fam in families:
         if dist.get(fam, 0):
             print(f"  {fam}: {dist[fam]}")
 

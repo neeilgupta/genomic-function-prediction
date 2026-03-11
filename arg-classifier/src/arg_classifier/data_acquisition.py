@@ -1,4 +1,7 @@
-"""Parse CARD FASTA, filter for 4 carbapenemase families, write metadata.csv."""
+"""Parse CARD FASTA, filter for target ARG families, write metadata.csv.
+
+Families are configured in configs/mvp.yaml under data.families.
+"""
 import csv
 import sys
 from pathlib import Path
@@ -6,9 +9,6 @@ from typing import Optional, Tuple
 
 from .io_fasta import load_fasta
 from .utils import load_config
-
-# Families to keep (prefix match on gene_name)
-FAMILIES = ("KPC", "NDM", "VIM", "IMP")
 
 # Reasons tracked for exclusion reporting
 _excluded = {"wrong_family": 0, "too_short": 0, "too_long": 0, "ambiguous": 0}
@@ -34,10 +34,10 @@ def _parse_header(header: str) -> dict:
     return {"accession": accession, "aro_id": aro_id, "gene_name": gene_name}
 
 
-def _assign_label(gene_name: str) -> Optional[str]:
-    """Return family label or None if not in the 4 target families."""
-    for family in FAMILIES:
-        if gene_name.upper().startswith(family):
+def _assign_label(gene_name: str, families: tuple) -> Optional[str]:
+    """Return family label or None if not in the target families."""
+    for family in families:
+        if gene_name.upper().startswith(family.upper()):
             return family
     return None
 
@@ -62,8 +62,10 @@ def run(config_path: str = "configs/mvp.yaml") -> None:
     out_path = raw_dir / "metadata.csv"
     min_len = cfg["data"]["min_length"]
     max_len = cfg["data"]["max_length"]
+    families = tuple(cfg["data"]["families"])
 
     print(f"Loading sequences from {fasta_path} ...")
+    print(f"  Target families: {list(families)}")
     records = load_fasta(fasta_path)
     print(f"  Total records in file: {len(records)}")
 
@@ -72,7 +74,7 @@ def run(config_path: str = "configs/mvp.yaml") -> None:
 
     for rec in records:
         parsed = _parse_header(rec["id"])
-        label = _assign_label(parsed["gene_name"])
+        label = _assign_label(parsed["gene_name"], families)
         if label is None:
             excl["wrong_family"] += 1
             continue
@@ -110,7 +112,7 @@ def run(config_path: str = "configs/mvp.yaml") -> None:
     from collections import Counter
     dist = Counter(r["label"] for r in kept)
     print(f"\nClass distribution:")
-    for fam in FAMILIES:
+    for fam in families:
         print(f"  {fam}: {dist.get(fam, 0)}")
 
 

@@ -4,8 +4,8 @@
   "cv_results": [
     {
       "C": 0.01,
-      "mean_cv_acc": 0.5162,
-      "std_cv_acc": 0.0031
+      "mean_cv_acc": 0.4125,
+      "std_cv_acc": 0.0033
     },
     {
       "C": 0.1,
@@ -31,5 +31,5 @@
   "best_cv_acc": 1.0,
   "train_acc": 1.0,
   "val_acc": 1.0,
-  "gridsearch_time_s": 1.1
+  "gridsearch_time_s": 1.14
 }

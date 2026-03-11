@@ -4,6 +4,7 @@ data:
   processed_dir: data/processed
   min_length: 100
   max_length: 5000
+  families: [KPC, NDM, VIM, IMP, OXA, CTX-M, TEM, SHV]
 split:
   train: 0.7
   val: 0.15

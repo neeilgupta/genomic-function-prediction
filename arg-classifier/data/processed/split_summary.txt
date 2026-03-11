@@ -9,12 +9,16 @@ Clusters per family:
   NDM: 56 cluster(s)
   VIM: 84 cluster(s)
   IMP: 87 cluster(s)
+  OXA: 141 cluster(s)
+  CTX-M: 106 cluster(s)
+  TEM: 90 cluster(s)
+  SHV: 72 cluster(s)
 
-Split     Total    KPC    NDM    VIM    IMP
+Split     Total    KPC    NDM    VIM    IMP    OXA  CTX-M    TEM    SHV
 ------------------------------------------------------------
-train       339    175     39     64     61
-val          77     27      8     15     27
-test         73     28     20     12     13
+train       686    175     39     64     61    108     88     83     68
+val         139     27      8     15     27     21     16     14     11
+test        134     28     20     12     13     21     16     13     11
 ------------------------------------------------------------
 
 Accession overlap checks:
