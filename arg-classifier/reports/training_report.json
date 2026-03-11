@@ -31,5 +31,5 @@
   "best_cv_acc": 1.0,
   "train_acc": 1.0,
   "val_acc": 1.0,
-  "gridsearch_time_s": 1.14
+  "gridsearch_time_s": 1.07
 }

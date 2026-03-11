@@ -1,8 +1,11 @@
 """Generate synthetic CARD-like FASTA data for pipeline testing.
 
-Creates 489 sequences across 4 families (KPC, NDM, VIM, IMP) that mimic
-real CARD data: within-family sequences differ by only a few SNPs, while
+Creates sequences across 8 families (KPC, NDM, VIM, IMP, OXA, CTX-M, TEM, SHV)
+that mimic real CARD data: within-family sequences differ by only a few SNPs, while
 cross-family sequences are biologically distinct.
+
+Also generates data/raw/other_sequences.fasta — 50 fully random sequences with
+no family affiliation, used for out-of-distribution (OOD) detection evaluation.
 
 Usage (from arg-classifier/):
     python3 scripts/generate_synthetic_data.py
@@ -85,6 +88,20 @@ def main():
     print(f"Wrote {len(records)} synthetic sequences to {out_path}")
     for fam, cfg in FAMILIES.items():
         print(f"  {fam}: {cfg['n']} sequences ({cfg['length']} bp each)")
+
+    # ── Write "other" sequences for OOD evaluation ────────────────────────────
+    # These are fully random sequences with no family affiliation.
+    # They are NOT included in training — only used to test OOD detection.
+    other_path = raw_dir / "other_sequences.fasta"
+    n_other = 50
+    other_length = 861  # typical ARG length so the test is realistic
+    with open(other_path, "w") as fh:
+        for i in range(1, n_other + 1):
+            seq = random_seq(other_length)
+            fh.write(f">OTHER-{i:03d} [synthetic_unknown_organism]\n")
+            for j in range(0, len(seq), 60):
+                fh.write(seq[j : j + 60] + "\n")
+    print(f"\nWrote {n_other} OOD 'other' sequences to {other_path}")
 
 
 if __name__ == "__main__":

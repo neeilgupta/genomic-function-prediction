@@ -19,3 +19,5 @@ model:
   C: 1.0  # fallback if param_grid is absent
   param_grid:
     C: [0.01, 0.1, 1.0, 10.0, 100.0]
+inference:
+  ood_threshold: 0.25  # sequences with max confidence below this → UNKNOWN

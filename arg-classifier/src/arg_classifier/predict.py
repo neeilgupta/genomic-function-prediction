@@ -22,8 +22,12 @@ def load_artifacts(model_path, vectorizer_path, encoder_path):
     return model, vectorizer, encoder
 
 
-def predict(sequences, model, vectorizer, encoder, k):
-    """Return list of prediction dicts for a list of sequence records."""
+def predict(sequences, model, vectorizer, encoder, k, threshold=None):
+    """Return list of prediction dicts for a list of sequence records.
+
+    If threshold is set, sequences whose max class probability is below it
+    are labelled "UNKNOWN" instead of a family name.
+    """
     kmer_docs = [seq_to_kmers(rec["sequence"], k) for rec in sequences]
     X = vectorizer.transform(kmer_docs).toarray().astype(np.float32)
     y_pred   = model.predict(X)
@@ -34,12 +38,15 @@ def predict(sequences, model, vectorizer, encoder, k):
 
     results = []
     for i, rec in enumerate(sequences):
-        pred_label = encoder.inverse_transform([y_pred[i]])[0]
-        confidence = float(y_proba[i].max())
+        max_proba = float(y_proba[i].max())
+        if threshold is not None and max_proba < threshold:
+            pred_label = "UNKNOWN"
+        else:
+            pred_label = encoder.inverse_transform([y_pred[i]])[0]
         results.append({
             "sequence_id":     rec["id"],
             "predicted_label": pred_label,
-            "confidence":      round(confidence, 6),
+            "confidence":      round(max_proba, 6),
             **{f"prob_{fam}": round(float(y_proba[i][j]), 6)
                for j, fam in enumerate(families)},
         })
@@ -58,10 +65,18 @@ def run(args=None):
     parser.add_argument("--vectorizer", default="artifacts/vectorizer.pkl")
     parser.add_argument("--encoder",    default="artifacts/label_encoder.pkl")
     parser.add_argument("--config",     default="configs/mvp.yaml")
+    parser.add_argument("--threshold",  type=float, default=None,
+                        help="OOD confidence threshold (overrides config); "
+                             "sequences with max confidence below this → UNKNOWN")
     opts = parser.parse_args(args)
 
     cfg = load_config(opts.config)
     k   = cfg["features"]["kmer_size"]
+
+    # Resolve threshold: CLI arg > config > None (disabled)
+    threshold = opts.threshold
+    if threshold is None:
+        threshold = cfg.get("inference", {}).get("ood_threshold")
 
     # ── Load artifacts ────────────────────────────────────────────────────────
     print(f"Loading model artifacts …")
@@ -81,7 +96,9 @@ def run(args=None):
     print(f"\nLoaded {len(sequences)} sequence(s) from {opts.fasta}")
 
     # ── Predict ───────────────────────────────────────────────────────────────
-    results = predict(sequences, model, vectorizer, encoder, k)
+    if threshold is not None:
+        print(f"  OOD threshold: {threshold}  (sequences below → UNKNOWN)")
+    results = predict(sequences, model, vectorizer, encoder, k, threshold=threshold)
 
     # ── Write CSV ─────────────────────────────────────────────────────────────
     families = list(encoder.classes_)
@@ -102,6 +119,8 @@ def run(args=None):
     for fam in families:
         if dist.get(fam, 0):
             print(f"  {fam}: {dist[fam]}")
+    if dist.get("UNKNOWN", 0):
+        print(f"  UNKNOWN: {dist['UNKNOWN']}  (below confidence threshold)")
 
     print(f"\nConfidence scores:")
     print(f"  min : {min(confs):.4f}")

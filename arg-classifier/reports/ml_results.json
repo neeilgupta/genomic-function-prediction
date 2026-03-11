@@ -156,5 +156,14 @@
     "SHV",
     "TEM",
     "VIM"
-  ]
+  ],
+  "ood_detection": {
+    "threshold": 0.25,
+    "n_test": 134,
+    "n_test_flagged_unknown": 0,
+    "false_positive_rate": 0.0,
+    "n_other": 50,
+    "n_other_flagged_unknown": 50,
+    "true_positive_rate": 1.0
+  }
 }

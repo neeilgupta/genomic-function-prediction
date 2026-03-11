@@ -17,6 +17,8 @@ from sklearn.metrics import (
 )
 
 from .utils import load_config
+from .io_fasta import load_fasta
+from .featurize_kmer import seq_to_kmers
 
 
 def run(config_path: str = "configs/mvp.yaml") -> None:
@@ -88,6 +90,59 @@ def run(config_path: str = "configs/mvp.yaml") -> None:
     plt.close()
     print(f"\n✓ Confusion matrix plot → {cm_path}")
 
+    # ── OOD Detection ─────────────────────────────────────────────────────────
+    ood_threshold = cfg.get("inference", {}).get("ood_threshold")
+    k = cfg["features"]["kmer_size"]
+
+    with open(artifacts_dir / "vectorizer.pkl", "rb") as fh:
+        vectorizer = pickle.load(fh)
+
+    ood_stats = None
+    other_fasta = Path(cfg["data"]["raw_dir"]) / "other_sequences.fasta"
+
+    if ood_threshold is None:
+        print("\nOOD threshold not configured — skipping OOD evaluation.")
+    elif not other_fasta.exists():
+        print(f"\nOOD evaluation skipped — {other_fasta} not found.")
+        print("  Run: python3.11 scripts/generate_synthetic_data.py")
+    else:
+        # False-positive rate: known-family test sequences wrongly flagged UNKNOWN
+        test_max_proba = y_proba.max(axis=1)
+        n_fp = int((test_max_proba < ood_threshold).sum())
+        fpr = n_fp / len(test_max_proba)
+
+        # True-positive rate: "other" sequences correctly flagged UNKNOWN
+        other_records = load_fasta(other_fasta)
+        other_docs = [seq_to_kmers(r["sequence"], k) for r in other_records]
+        X_other = vectorizer.transform(other_docs).toarray().astype(np.float32)
+        other_proba = clf.predict_proba(X_other)
+        other_max = other_proba.max(axis=1)
+        n_tp = int((other_max < ood_threshold).sum())
+        n_other = len(other_records)
+        tpr = n_tp / n_other
+
+        print(f"\n{'='*52}")
+        print(f"OOD DETECTION  (threshold={ood_threshold})")
+        print(f"{'='*52}")
+        print(f"  Known-family sequences (test set, n={len(test_max_proba)}):")
+        print(f"    Correctly retained (not flagged UNKNOWN): "
+              f"{len(test_max_proba)-n_fp}/{len(test_max_proba)}  ({(1-fpr)*100:.1f}%)")
+        print(f"    False positive rate (wrongly → UNKNOWN):  "
+              f"{n_fp}/{len(test_max_proba)}  ({fpr*100:.1f}%)")
+        print(f"  'Other' sequences (n={n_other}):")
+        print(f"    Correctly flagged UNKNOWN: {n_tp}/{n_other}  ({tpr*100:.1f}%)")
+        print(f"    Missed (given a family label): {n_other-n_tp}/{n_other}  ({(1-tpr)*100:.1f}%)")
+
+        ood_stats = {
+            "threshold": ood_threshold,
+            "n_test": len(test_max_proba),
+            "n_test_flagged_unknown": n_fp,
+            "false_positive_rate": round(fpr, 4),
+            "n_other": n_other,
+            "n_other_flagged_unknown": n_tp,
+            "true_positive_rate": round(tpr, 4),
+        }
+
     # ── Save ML results JSON ──────────────────────────────────────────────────
     ml_results = {
         "model": "logistic_regression_tfidf",
@@ -97,6 +152,8 @@ def run(config_path: str = "configs/mvp.yaml") -> None:
         "confusion_matrix": cm.tolist(),
         "labels": FAMILIES,
     }
+    if ood_stats is not None:
+        ml_results["ood_detection"] = ood_stats
     ml_path = reports_dir / "ml_results.json"
     with open(ml_path, "w") as fh:
         json.dump(ml_results, fh, indent=2)
